@@ -16,18 +16,17 @@ class Move(NamedTuple):
 
 BOARD_SIZE: int = 3
 DEFAULT_PLAYERS = (
-    Player(label = "X", color = "blue", cpu = True),
+    Player(label = "X", color = "blue", cpu = False),
     Player(label = "O", color = "green", cpu = False),
 )
 
 
 class TicTacToeGame:
     def __init__(self, players = DEFAULT_PLAYERS, board_size = BOARD_SIZE) -> None:
-        # self.players_list = list(players)
-        # self._players = cycle(self.players_list)
-        self._players = cycle(players)
+        self.players_list = list(players)
+        self._players = None
         self.board_size = board_size
-        self.current_player = next(self._players)
+        self.current_player = None
         self.winner_combo = []
         self._current_moves = []
         self._has_winner = False
@@ -36,6 +35,10 @@ class TicTacToeGame:
         self.player_moves = []
         self.hard_mode = True
         self._setup_board()
+
+    def set_players(self, players):
+        self._players = cycle(players)
+        self.current_player = next(self._players)
 
     def _setup_board(self) -> None:
         self._current_moves = [
@@ -103,11 +106,11 @@ class TicTacToeGame:
         self.player_moves = []
         self.current_player = DEFAULT_PLAYERS[0]
 
-    # def set_cpu_player(self, player_index: int, new_cpu_value: bool):
-    #     old_player = self.players_list[player_index]
-    #     updated_player = old_player._replace(cpu=new_cpu_value)
-    #     self.players_list[player_index] = updated_player
-    #     self._players = cycle(self.players_list)
+    def set_cpu_player(self, player_index: int, new_cpu_value: bool):
+        old_player = self.players_list[player_index]
+        updated_player = old_player._replace(cpu=new_cpu_value)
+        self.players_list[player_index] = updated_player
+        self._players = cycle(self.players_list)
 
 
 
@@ -122,18 +125,26 @@ class TicTacToeBoard(tk.Tk):
         self._create_menu()
         self._create_board_display()
         self._create_board_grid()
-        self.cpu_play()
+        
 
     def popup(self):
         self.cpu_mode_option = tk.IntVar()
         self.easy_mode_option = tk.IntVar()
         self.twitch_mode_option = tk.IntVar()
+        self.first_player_mode_option = tk.IntVar()
         self.popup_window = tk.Toplevel()
         self.eval(f"tk::PlaceWindow {str(self.popup_window)} center")
         self.popup_window.title("Popup")
         self.popup_window.attributes("-topmost", True)
         self.popup_window.bind("<FocusOut>", lambda event: self.popup_window.focus_force())
         self.popup_window.protocol('WM_DELETE_WINDOW', 'break')
+        self.popup_window.first_player_check = tk.Checkbutton(
+            self.popup_window, 
+            text="Play First?",
+            variable=self.first_player_mode_option,
+            onvalue=1,
+            offvalue=0,
+            font=("helvetica", 13)).pack(pady=(5),padx=(20))
         self.popup_window.cpu_check = tk.Checkbutton(
             self.popup_window, 
             text="Play VS the CPU",
@@ -164,12 +175,15 @@ class TicTacToeBoard(tk.Tk):
     
 
     def confirm_button(self):
+
         self.attributes("-disabled", False)
         self.popup_window.destroy()
         if self.easy_mode_option.get() == 1:
             self._game.hard_mode = False
         if self.cpu_mode_option.get() == 1:
-            self._game.set_cpu_player(0, True)
+            self._game.set_cpu_player(1, True)
+        self._game.set_players(self._game.players_list)
+        self.cpu_play()
 
     def _create_menu(self):
         menu_bar = tk.Menu(master=self)
