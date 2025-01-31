@@ -101,9 +101,11 @@ class TicTacToeGame:
             for col, _ in enumerate(row_content):
                 row_content[col] = Move(row, col)
         self._has_winner = False
+        self.hard_mode = True
         self.winner_combo = []
         self.cpu_moves = []
         self.player_moves = []
+        self.players_list = list(DEFAULT_PLAYERS)
         self.current_player = DEFAULT_PLAYERS[0]
 
     def set_cpu_player(self, player_index: int, new_cpu_value: bool):
@@ -127,7 +129,7 @@ class TicTacToeBoard(tk.Tk):
         self._create_board_grid()
         
 
-    def popup(self):
+    def popup(self) -> None:
         self.cpu_mode_option = tk.IntVar()
         self.easy_mode_option = tk.IntVar()
         self.twitch_mode_option = tk.IntVar()
@@ -161,7 +163,7 @@ class TicTacToeBoard(tk.Tk):
             font=("helvetica", 13)).pack(pady=(5),padx=(20))
         self.popup_window.twitch_check = tk.Checkbutton(
             self.popup_window, 
-            text="Twitch Plays",
+            text="Twitch Plays DNT",
             variable=self.twitch_mode_option,
             onvalue=1, 
             offvalue=0,
@@ -174,16 +176,24 @@ class TicTacToeBoard(tk.Tk):
         self.attributes("-disabled", True)
     
 
-    def confirm_button(self):
-
+    def confirm_button(self) -> None:
         self.attributes("-disabled", False)
         self.popup_window.destroy()
-        if self.easy_mode_option.get() == 1:
+        if self.easy_mode_option.get():
             self._game.hard_mode = False
-        if self.cpu_mode_option.get() == 1:
-            self._game.set_cpu_player(1, True)
-        self._game.set_players(self._game.players_list)
-        self.cpu_play()
+        if self.cpu_mode_option.get() == 0:
+            self._game.set_players(self._game.players_list)
+            self.cpu_play()
+        else:
+            if self.cpu_mode_option.get() and self.first_player_mode_option.get():
+                self._game.set_cpu_player(1, True)
+                self._game.set_players(self._game.players_list)
+                self.cpu_play()
+            elif self.cpu_mode_option.get() and self.first_player_mode_option.get() == 0:
+                self._game.set_cpu_player(0, True)
+                self._game.set_players(self._game.players_list)
+                self.cpu_play()
+
 
     def _create_menu(self):
         menu_bar = tk.Menu(master=self)
