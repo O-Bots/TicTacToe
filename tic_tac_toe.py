@@ -235,6 +235,7 @@ class TicTacToeBoard(tk.Tk):
             self.rowconfigure(row, weight = 1, minsize = 50)
             self.columnconfigure(row, weight = 1, minsize = 75)
             for col in range(self._game.board_size):
+                cell_number = row * self._game.board_size + col + 1
                 button = tk.Button(
                     master = grid_frame,
                     text = "",
@@ -245,6 +246,7 @@ class TicTacToeBoard(tk.Tk):
                     height = 2,
                     activebackground="#c39bd3",
                 )
+                button.num_label = cell_number
                 self._cells[button] = (row, col)
                 button.bind("<ButtonPress-1>", self.play)
                 button.grid(
