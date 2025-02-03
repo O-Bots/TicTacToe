@@ -117,11 +117,12 @@ class TicTacToeGame:
 
 
 class TicTacToeBoard(tk.Tk):
-    def __init__(self, game) -> None:
+    def __init__(self, game, logic) -> None:
         super().__init__()
         self.title("Tic-Tac-Toe Game")
         self._cells = {}
         self._game = game
+        self._logic = logic
         self.eval("tk::PlaceWindow . center")
         self.popup()
         self._create_menu()
@@ -359,10 +360,23 @@ class TicTacToeBoard(tk.Tk):
             button.config(text="")
             button.config(fg="black")
 
+class TicTacToeGameCpuLogic:
+    def __init__(self, game):
+        self._game = game
+
+    def block_move(self):
+        pass
+
+    def double_threat_setup(self):
+        pass
+
+    
+
 def main():
     """Create game board and run its main loop"""
     game = TicTacToeGame()
-    board = TicTacToeBoard(game)
+    logic = TicTacToeGameCpuLogic(game)
+    board = TicTacToeBoard(game, logic)
     board.mainloop()
 
 if __name__ == "__main__":
