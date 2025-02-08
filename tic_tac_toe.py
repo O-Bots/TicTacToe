@@ -117,17 +117,20 @@ class TicTacToeGame:
 
 
 class TicTacToeBoard(tk.Tk):
-    def __init__(self, game, logic) -> None:
+    def __init__(self, game) -> None:
         super().__init__()
         self.title("Tic-Tac-Toe Game")
         self._cells = {}
         self._game = game
-        self._logic = logic
+        self.vs_cpu_status = [int, bool]
+        self.twitch_vs_cpu_status = None
+        self.hard_mode_status = self._game.hard_mode
+        first_player_status = None
         self.eval("tk::PlaceWindow . center")
         self.popup()
-        self._create_menu()
         self._create_board_display()
         self._create_board_grid()
+        self._create_menu()
         
 
     def popup(self) -> None:
@@ -181,19 +184,21 @@ class TicTacToeBoard(tk.Tk):
         self.attributes("-disabled", False)
         self.popup_window.destroy()
         if self.easy_mode_option.get():
-            self._game.hard_mode = False
+            self.hard_mode_status= False
         if self.cpu_mode_option.get() == 0:
             self._game.set_players(self._game.players_list)
-            self.cpu_play()
+            self._logic.cpu_play()
         else:
             if self.cpu_mode_option.get() and self.first_player_mode_option.get():
+                self.vs_cpu_status = [1, True]
                 self._game.set_cpu_player(1, True)
                 self._game.set_players(self._game.players_list)
-                self.cpu_play()
+                self._logic.cpu_play()
             elif self.cpu_mode_option.get() and self.first_player_mode_option.get() == 0:
+                self.vs_cpu_status = [0, True]
                 self._game.set_cpu_player(0, True)
                 self._game.set_players(self._game.players_list)
-                self.cpu_play()
+                self._logic.cpu_play()
 
 
     def _create_menu(self):
@@ -202,8 +207,9 @@ class TicTacToeBoard(tk.Tk):
         file_menu = tk.Menu(master=menu_bar)
         file_menu.add_command(
             label="Play Again",
-            command=self.reset_board
+            command=self.restart_game
         )
+        file_menu.add_separator()
         file_menu.add_command(
             label="Options",
             command=lambda: [self.popup(), self.reset_board()]
@@ -257,55 +263,6 @@ class TicTacToeBoard(tk.Tk):
                     pady = 5,
                     sticky = "nsew"
                 )
-
-    def cpu_play(self) -> None:
-        available_moves = []
-        keys, values = list(self._cells), list(self._cells.values())
-        player_winning_move = []
-        cpu_winning_move = []
-        #Blocking player, Winning move logic
-        for win_combo in self._game._winning_combos:
-            player_count = 0
-            cpu_count = 0
-            player_moves = [tuple(item) for item in self._game.player_moves]
-            cpu_moves = [tuple(item) for item in self._game.cpu_moves]
-            if not(bool(set(player_moves) & set(win_combo))):
-                for move in win_combo:
-                    for cpu_move in self._game.cpu_moves:
-                        if list(move) == cpu_move:
-                            cpu_count += 1
-            elif not bool(set(cpu_moves) & set(win_combo)):
-                for move in win_combo:
-                    for player_move in self._game.player_moves:
-                        if list(move) == player_move:
-                            player_count += 1
-            if cpu_count == BOARD_SIZE -1:
-                cpu_winning_move.append(set(win_combo) - set(cpu_moves))
-            elif player_count == BOARD_SIZE -1:
-                player_winning_move.append(set(win_combo) - set(player_moves))
-
-        #Logic for choosing where to move
-        if self._game.current_player.cpu:
-            if self._game.hard_mode:
-                if len(cpu_winning_move) > 0:
-                    for key, value in zip(keys, values):
-                        if value in cpu_winning_move[0]:
-                            self.play(key)
-                elif len(player_winning_move) > 0:
-                    for key, value in zip(keys, values):
-                        if value in player_winning_move[0]:
-                            self.play(key)
-                else:
-                    for key in keys:
-                        if key.config("text")[4] == "":
-                            available_moves.append(key)
-                    self.play(random.choice(available_moves))
-            else:
-                for key in keys:
-                    if key.config("text")[4] == "":
-                        available_moves.append(key)
-                self.play(random.choice(available_moves))
-        available_moves = []
     
     def play(self, event) -> None:
         #Handle a player's move
@@ -335,7 +292,7 @@ class TicTacToeBoard(tk.Tk):
                 msg = f"{self._game.current_player.label}'s turn"
                 self._update_display(msg)
                 if self._game.current_player.cpu:
-                    self.cpu_play()
+                    self._logic.cpu_play()
 
 
     def _update_button(self, clicked_btn):
@@ -360,23 +317,96 @@ class TicTacToeBoard(tk.Tk):
             button.config(text="")
             button.config(fg="black")
 
+    def restart_game(self):
+        """Restarts the game keeping the sttings to play again."""
+        for row, row_content in enumerate(self._game._current_moves):
+            for col, _ in enumerate(row_content):
+                row_content[col] = Move(row, col)
+        self._game._has_winner = False
+        self._game.winner_combo = []
+        self._game.cpu_moves = []
+        self._game.player_moves = []
+        self._update_display(msg="Ready?")
+        for button in self._cells.keys():
+            button.config(highlightbackground="lightblue")
+            button.config(text="")
+            button.config(fg="black")
+        self._game.set_cpu_player(self.vs_cpu_status[0],self.vs_cpu_status[1])
+        self._game.set_players(self._game.players_list)
+        self._logic.cpu_play()
+
 class TicTacToeGameCpuLogic:
-    def __init__(self, game):
+    def __init__(self, game, board):
         self._game = game
+        self._board = board
 
     def block_move(self):
+        pass
+
+    def cpu_first_to_move(self):
+        pass
+
+    def cpu_second_to_move(self):
         pass
 
     def double_threat_setup(self):
         pass
 
-    
+    def cpu_play(self) -> None:
+        available_moves = []
+        keys, values = list(self._board._cells), list(self._board._cells.values())
+        player_winning_move = []
+        cpu_winning_move = []
+        #Blocking player, Winning move logic
+        for win_combo in self._game._winning_combos:
+            player_count = 0
+            cpu_count = 0
+            player_moves = [tuple(item) for item in self._game.player_moves]
+            cpu_moves = [tuple(item) for item in self._game.cpu_moves]
+            if not(bool(set(player_moves) & set(win_combo))):
+                for move in win_combo:
+                    for cpu_move in self._game.cpu_moves:
+                        if list(move) == cpu_move:
+                            cpu_count += 1
+            elif not bool(set(cpu_moves) & set(win_combo)):
+                for move in win_combo:
+                    for player_move in self._game.player_moves:
+                        if list(move) == player_move:
+                            player_count += 1
+            if cpu_count == BOARD_SIZE -1:
+                cpu_winning_move.append(set(win_combo) - set(cpu_moves))
+            elif player_count == BOARD_SIZE -1:
+                player_winning_move.append(set(win_combo) - set(player_moves))
+
+        #Logic for choosing where to move
+        if self._game.current_player.cpu:
+            if self._board.hard_mode_status:
+                if len(cpu_winning_move) > 0:
+                    for key, value in zip(keys, values):
+                        if value in cpu_winning_move[0]:
+                            self._board.play(key)
+                elif len(player_winning_move) > 0:
+                    for key, value in zip(keys, values):
+                        if value in player_winning_move[0]:
+                            self._board.play(key)
+                else:
+                    for key in keys:
+                        if key.config("text")[4] == "":
+                            available_moves.append(key)
+                    self._board.play(random.choice(available_moves))
+            else:
+                for key in keys:
+                    if key.config("text")[4] == "":
+                        available_moves.append(key)
+                self._board.play(random.choice(available_moves))
+        available_moves = []
 
 def main():
     """Create game board and run its main loop"""
     game = TicTacToeGame()
-    logic = TicTacToeGameCpuLogic(game)
-    board = TicTacToeBoard(game, logic)
+    board = TicTacToeBoard(game)
+    logic = TicTacToeGameCpuLogic(game, board)
+    board._logic = logic
     board.mainloop()
 
 if __name__ == "__main__":
