@@ -138,6 +138,7 @@ class TicTacToeBoard(tk.Tk):
         self.easy_mode_option = tk.IntVar()
         self.twitch_mode_option = tk.IntVar()
         self.first_player_mode_option = tk.IntVar()
+        self.twitch_channel_input = None
         self.popup_window = tk.Toplevel()
         self.eval(f"tk::PlaceWindow {str(self.popup_window)} center")
         self.popup_window.title("Popup")
@@ -171,14 +172,40 @@ class TicTacToeBoard(tk.Tk):
             variable=self.twitch_mode_option,
             onvalue=1, 
             offvalue=0,
-            font=("helvetica", 13)).pack(pady=(5),padx=(20))
+            font=("helvetica", 13),
+            command=self.channel_input)
+        self.popup_window.twitch_check.pack(pady=(5),padx=(20))
         self.popup_window.confirm_button = tk.Button(
             self.popup_window, 
             text="Confirm", 
             command=self.confirm_button,
             font=("helvetica", 13)).pack(side="bottom", padx=10,pady=10)
         self.attributes("-disabled", True)
+
+    def channel_input(self):
+        if self.twitch_mode_option.get():
+            if self.twitch_channel_input is None:
+                self.twitch_channel_input = tk.Text(self.popup_window, height= 1, width=20)
+                self.twitch_channel_input.pack()
+                self.twitch_channel_input.insert(tk.END, "Enter Twitch Channel")
+                self.twitch_channel_input.bind("<FocusIn>", lambda e: self.text_entry_click())
+                self.twitch_channel_input.bind("<FocusOut>", lambda e: self.on_text_entry_focusout())
+                self.twitch_channel_input.config(fg= "grey")
+        else:
+            if self.twitch_channel_input is not None:
+                self.twitch_channel_input.pack_forget()
+                self.twitch_channel_input.destroy()
+                self.twitch_channel_input = None
+
+    def text_entry_click(self):
+        if self.twitch_channel_input.get("1.0", "end-1c") == "Enter Twitch Channel":
+            self.twitch_channel_input.delete("1.0", "end-1c")
+            self.twitch_channel_input.insert("1.0", "")
     
+    def on_text_entry_focusout(self):
+        if self.twitch_channel_input.get("1.0", "end-1c") == "":
+            self.twitch_channel_input.insert(tk.END, "Enter Twitch Channel")
+            self.twitch_channel_input.config(fg= "grey")
 
     def confirm_button(self) -> None:
         self.attributes("-disabled", False)
