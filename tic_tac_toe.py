@@ -122,10 +122,10 @@ class TicTacToeBoard(tk.Tk):
         self.title("Tic-Tac-Toe Game")
         self._cells = {}
         self._game = game
-        self.vs_cpu_status = [int, bool]
-        self.twitch_vs_cpu_status = None
+        self.vs_cpu_status = None
+        self.vs_cpu_info = [int, bool]
+        self.twitch_vs_cpu_info = None
         self.hard_mode_status = self._game.hard_mode
-        first_player_status = None
         self.eval("tk::PlaceWindow . center")
         self.popup()
         self._create_board_display()
@@ -173,8 +173,7 @@ class TicTacToeBoard(tk.Tk):
             onvalue=1, 
             offvalue=0,
             font=("helvetica", 13),
-            command=self.channel_input)
-        self.popup_window.twitch_check.pack(pady=(5),padx=(20))
+            command=self.channel_input).pack(pady=(5),padx=(20))
         self.popup_window.confirm_button = tk.Button(
             self.popup_window, 
             text="Confirm", 
@@ -213,16 +212,19 @@ class TicTacToeBoard(tk.Tk):
         if self.easy_mode_option.get():
             self.hard_mode_status= False
         if self.cpu_mode_option.get() == 0:
+            self.vs_cpu_status = False
             self._game.set_players(self._game.players_list)
             self._logic.cpu_play()
         else:
             if self.cpu_mode_option.get() and self.first_player_mode_option.get():
-                self.vs_cpu_status = [1, True]
+                self.vs_cpu_status = True
+                self.vs_cpu_info = [1, True]
                 self._game.set_cpu_player(1, True)
                 self._game.set_players(self._game.players_list)
                 self._logic.cpu_play()
             elif self.cpu_mode_option.get() and self.first_player_mode_option.get() == 0:
-                self.vs_cpu_status = [0, True]
+                self.vs_cpu_status = True
+                self.vs_cpu_info = [0, True]
                 self._game.set_cpu_player(0, True)
                 self._game.set_players(self._game.players_list)
                 self._logic.cpu_play()
@@ -358,9 +360,13 @@ class TicTacToeBoard(tk.Tk):
             button.config(highlightbackground="lightblue")
             button.config(text="")
             button.config(fg="black")
-        self._game.set_cpu_player(self.vs_cpu_status[0],self.vs_cpu_status[1])
-        self._game.set_players(self._game.players_list)
-        self._logic.cpu_play()
+        if self.vs_cpu_status:
+            self._game.set_cpu_player(self.vs_cpu_info[0],self.vs_cpu_info[1])
+            self._game.set_players(self._game.players_list)
+            self._logic.cpu_play()
+        else:
+            self._game.set_players(self._game.players_list)
+            self._logic.cpu_play()
 
 class TicTacToeGameCpuLogic:
     def __init__(self, game, board):
@@ -370,14 +376,39 @@ class TicTacToeGameCpuLogic:
     def block_move(self):
         pass
 
-    def cpu_first_to_move(self):
-        pass
+    def cpu_first_move(self) -> int:
+        corners = self.get_corners()
+        center = self.get_center()
+        best_first_move_options = self.get_center()+self.get_corners()
+        best_first_move_options_list = [list(value) for key, value in best_first_move_options]
+        if len(self._game.player_moves) ==0:
+            [key, value] = random.choice(best_first_move_options)
+            return key
+        elif len(self._game.player_moves) ==1:
+            if self._game.player_moves[0] in best_first_move_options_list:
+                if tuple(self._game.player_moves[0]) == center[0][1]:
+                    [key, value] = random.choice(corners)
+                    return key
+                elif tuple(self._game.player_moves[0]) is not center[0][1]:
+                    return center[0][0]
+            else:
+                return center[0][0]
 
     def cpu_second_to_move(self):
         pass
 
     def double_threat_setup(self):
         pass
+    
+    def get_corners(self):
+        board_size = self._game.board_size
+        corner_coords = {(0,0), (0, board_size-1), (board_size-1,0), (board_size-1, board_size-1)}
+        return [[button, coord] for button, coord in self._board._cells.items() if coord in corner_coords]
+
+    def get_center(self):
+        board_size = self._game.board_size
+        center_coord = (board_size // 2, board_size // 2)
+        return [[button, coord] for button, coord in self._board._cells.items() if coord == center_coord]
 
     def cpu_play(self) -> None:
         available_moves = []
@@ -389,6 +420,7 @@ class TicTacToeGameCpuLogic:
             player_count = 0
             cpu_count = 0
             player_moves = [tuple(item) for item in self._game.player_moves]
+            # print(player_moves)
             cpu_moves = [tuple(item) for item in self._game.cpu_moves]
             if not(bool(set(player_moves) & set(win_combo))):
                 for move in win_combo:
@@ -417,10 +449,13 @@ class TicTacToeGameCpuLogic:
                         if value in player_winning_move[0]:
                             self._board.play(key)
                 else:
-                    for key in keys:
-                        if key.config("text")[4] == "":
-                            available_moves.append(key)
-                    self._board.play(random.choice(available_moves))
+                    if len(self._game.player_moves) + len(self._game.cpu_moves) <= 1:
+                        self._board.play(self.cpu_first_move())
+                    else:
+                        for key in keys:
+                            if key.config("text")[4] == "":
+                                available_moves.append(key)
+                        self._board.play(random.choice(available_moves))
             else:
                 for key in keys:
                     if key.config("text")[4] == "":
