@@ -373,32 +373,73 @@ class TicTacToeGameCpuLogic:
         self._game = game
         self._board = board
 
-    def block_move(self):
-        pass
+    def block_win_check(self):
+        for win_combo in self._game._winning_combos:
+            player_count = 0
+            cpu_count = 0
+            player_moves = [tuple(item) for item in self._game.player_moves]
+            cpu_moves = [tuple(item) for item in self._game.cpu_moves]
+            if not(bool(set(player_moves) & set(win_combo))):
+                for move in win_combo:
+                    for cpu_move in self._game.cpu_moves:
+                        if list(move) == cpu_move:
+                            cpu_count += 1
+            elif not bool(set(cpu_moves) & set(win_combo)):
+                for move in win_combo:
+                    for player_move in self._game.player_moves:
+                        if list(move) == player_move:
+                            player_count += 1
+            if cpu_count == BOARD_SIZE -1:
+                self.cpu_winning_move.append(set(win_combo) - set(cpu_moves))
+            elif player_count == BOARD_SIZE -1:
+                self.player_winning_move.append(set(win_combo) - set(player_moves))
 
     def cpu_first_move(self) -> int:
-        corners = self.get_corners()
-        center = self.get_center()
-        best_first_move_options = self.get_center()+self.get_corners()
-        best_first_move_options_list = [list(value) for key, value in best_first_move_options]
+        self.corners = self.get_corners()
+        self.center = self.get_center()
+        self.best_first_move_options = self.get_center()+self.get_corners()
+        self.best_first_move_options_list = [list(value) for key, value in self.best_first_move_options]
         if len(self._game.player_moves) ==0:
-            [key, value] = random.choice(best_first_move_options)
+            [key, value] = random.choice(self.best_first_move_options)
             return key
         elif len(self._game.player_moves) ==1:
-            if self._game.player_moves[0] in best_first_move_options_list:
-                if tuple(self._game.player_moves[0]) == center[0][1]:
-                    [key, value] = random.choice(corners)
+            if self._game.player_moves[0] in self.best_first_move_options_list:
+                if tuple(self._game.player_moves[0]) == self.center[0][1]:
+                    [key, value] = random.choice(self.corners)
                     return key
-                elif tuple(self._game.player_moves[0]) is not center[0][1]:
-                    return center[0][0]
+                elif tuple(self._game.player_moves[0]) is not self.center[0][1]:
+                    return self.center[0][0]
             else:
-                return center[0][0]
+                return self.center[0][0]
 
-    def cpu_second_to_move(self):
+    def cpu_second_move(self):
         pass
 
     def double_threat_setup(self):
-        pass
+        #This is the logic for the cpu's second and third move which will play into setting up the double threat
+        player_moves = [tuple(item) for item in self._game.player_moves]
+        cpu_moves = [tuple(item) for item in self._game.cpu_moves]
+        best_move_options = [tuple(item) for item in self.best_first_move_options_list]
+        best_moves = [item for item in best_move_options if item not in player_moves+cpu_moves]
+        available_moves = [[key, value] for key, value in self.best_first_move_options if value in best_moves]
+        if len(player_moves)+len(cpu_moves) == 2:
+            if player_moves[0] in best_move_options:
+                if [value for key,value in available_moves if value == self.center[0][1]]:
+                    return self.center[0][0]
+                elif self.center[0][1] in player_moves:
+                    move = [key for key,value in available_moves if value[0] is not cpu_moves[0][0] and value[1] is not cpu_moves[0][1]]
+                    return move[0]
+                else:
+                    [key, value] = random.choice(available_moves)
+                    return key
+            else:
+                if self.center[0][1] in cpu_moves:
+                    move = [key for key,value in available_moves if value[0] is not player_moves[0][0] and value[1] is not player_moves[0][1]]
+                    return random.choice(move)
+                else:
+                    return self.center[0][0]
+        # elif len(player_moves)+len(cpu_moves) == 3:
+        #     pass
     
     def get_corners(self):
         board_size = self._game.board_size
@@ -413,44 +454,26 @@ class TicTacToeGameCpuLogic:
     def cpu_play(self) -> None:
         available_moves = []
         keys, values = list(self._board._cells), list(self._board._cells.values())
-        player_winning_move = []
-        cpu_winning_move = []
-        #Blocking player, Winning move logic
-        for win_combo in self._game._winning_combos:
-            player_count = 0
-            cpu_count = 0
-            player_moves = [tuple(item) for item in self._game.player_moves]
-            # print(player_moves)
-            cpu_moves = [tuple(item) for item in self._game.cpu_moves]
-            if not(bool(set(player_moves) & set(win_combo))):
-                for move in win_combo:
-                    for cpu_move in self._game.cpu_moves:
-                        if list(move) == cpu_move:
-                            cpu_count += 1
-            elif not bool(set(cpu_moves) & set(win_combo)):
-                for move in win_combo:
-                    for player_move in self._game.player_moves:
-                        if list(move) == player_move:
-                            player_count += 1
-            if cpu_count == BOARD_SIZE -1:
-                cpu_winning_move.append(set(win_combo) - set(cpu_moves))
-            elif player_count == BOARD_SIZE -1:
-                player_winning_move.append(set(win_combo) - set(player_moves))
+        self.player_winning_move = []
+        self.cpu_winning_move = []
+        self.block_win_check()
 
         #Logic for choosing where to move
         if self._game.current_player.cpu:
             if self._board.hard_mode_status:
-                if len(cpu_winning_move) > 0:
+                if len(self.cpu_winning_move) > 0:
                     for key, value in zip(keys, values):
-                        if value in cpu_winning_move[0]:
+                        if value in self.cpu_winning_move[0]:
                             self._board.play(key)
-                elif len(player_winning_move) > 0:
+                elif len(self.player_winning_move) > 0:
                     for key, value in zip(keys, values):
-                        if value in player_winning_move[0]:
+                        if value in self.player_winning_move[0]:
                             self._board.play(key)
                 else:
                     if len(self._game.player_moves) + len(self._game.cpu_moves) <= 1:
                         self._board.play(self.cpu_first_move())
+                    elif len(self._game.player_moves) + len(self._game.cpu_moves) in range(2, 3):
+                        self._board.play(self.double_threat_setup())
                     else:
                         for key in keys:
                             if key.config("text")[4] == "":
