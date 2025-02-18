@@ -1,3 +1,4 @@
+from tkinter import *
 import tkinter as tk
 from itertools import cycle
 from tkinter import font
@@ -256,10 +257,11 @@ class TicTacToeBoard(tk.Tk):
         self.display = tk.Label(
             master = display_frame,
             text ="Ready?",
-            font = font.Font(size = 28, weight = "bold"),
+            font = font.Font(size = 20, weight = "bold"),
             background="#aab7b8",
         )
         self.display.pack()
+
 
     def _create_board_grid(self) -> None:
         grid_frame = tk.Frame(
@@ -331,6 +333,14 @@ class TicTacToeBoard(tk.Tk):
     def _update_display(self, msg, color="black"):
         self.display["text"] = msg
         self.display["fg"] = color
+
+    def _update_player_one_info_display(self, msg, color="black"):
+        self.player_one_display_label["text"] = msg
+        self.player_one_display_label["fg"] = color
+
+    def _update_player_two_info_display(self, msg, color="black"):
+        self.player_two_display_label["text"] = msg
+        self.player_two_display_label["fg"] = color
 
     def _highlight_cells(self):
         for button, coordinates in self._cells.items():
