@@ -252,18 +252,6 @@ class TicTacToeBoard(tk.Tk):
         menu_bar.add_cascade(label="File", menu=file_menu)
 
     def _create_board_display(self) -> None:
-        # display_frame = tk.Frame(
-        #     master = self,
-        #     background="#aab7b8",
-        # )
-        # display_frame.pack(fill=tk.X)
-        # self.display = tk.Label(
-        #     master = display_frame,
-        #     text ="Ready?",
-        #     font = font.Font(size = 20, weight = "bold"),
-        #     background="#aab7b8",
-        # )
-        # self.display.pack()
         display_info_frame = tk.Frame(master=self.master_frame, background= "#aab7b8")
         display_info_frame.place(x=0, y=0 , relheight=0.15, relwidth=1)
         display_info_frame.columnconfigure((0,1,2), weight = 1)
