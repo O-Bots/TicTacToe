@@ -120,7 +120,10 @@ class TicTacToeGame:
 class TicTacToeBoard(tk.Tk):
     def __init__(self, game) -> None:
         super().__init__()
+        self.minsize(400,500)
         self.title("Tic-Tac-Toe Game")
+        self.master_frame = tk.Frame(master=self)
+        self.master_frame.place(x=0, y=0, relheight=1, relwidth=1)
         self._cells = {}
         self._game = game
         self.vs_cpu_status = None
@@ -249,29 +252,68 @@ class TicTacToeBoard(tk.Tk):
         menu_bar.add_cascade(label="File", menu=file_menu)
 
     def _create_board_display(self) -> None:
-        display_frame = tk.Frame(
-            master = self,
-            background="#aab7b8",
-        )
-        display_frame.pack(fill=tk.X)
+        # display_frame = tk.Frame(
+        #     master = self,
+        #     background="#aab7b8",
+        # )
+        # display_frame.pack(fill=tk.X)
+        # self.display = tk.Label(
+        #     master = display_frame,
+        #     text ="Ready?",
+        #     font = font.Font(size = 20, weight = "bold"),
+        #     background="#aab7b8",
+        # )
+        # self.display.pack()
+        display_info_frame = tk.Frame(master=self.master_frame, background= "#aab7b8")
+        display_info_frame.place(x=0, y=0 , relheight=0.15, relwidth=1)
+        display_info_frame.columnconfigure((0,1,2), weight = 1)
+        display_info_frame.rowconfigure((0,1,2), weight = 1)
+
         self.display = tk.Label(
-            master = display_frame,
+            master = display_info_frame,
             text ="Ready?",
             font = font.Font(size = 20, weight = "bold"),
             background="#aab7b8",
         )
-        self.display.pack()
+        self.display.grid(row=2, column=0, columnspan=3, sticky="nsew")
+
+        self.player_one_label_display = tk.Label(
+            master = display_info_frame,
+            text ="Player one?",
+            font = font.Font(size = 10),
+            background="#aab7b8",
+        )
+        self.player_one_label_display.grid(row=0, column=0, sticky="nsew")
+        self.player_one_score_display = tk.Label(
+            master = display_info_frame,
+            text ="123",
+            font = font.Font(size = 10),
+            background="#aab7b8",
+        )
+        self.player_one_score_display.grid(row=1, column=0, sticky="nsew")
+
+        self.player_two_label_display = tk.Label(
+            master = display_info_frame,
+            text ="Player one?",
+            font = font.Font(size = 10),
+            background="#aab7b8",
+        )
+        self.player_two_label_display.grid(row=0, column=2, sticky="nsew")
+        self.player_two_score_display = tk.Label(
+            master = display_info_frame,
+            text ="123",
+            font = font.Font(size = 10),
+            background="#aab7b8",
+        )
+        self.player_two_score_display.grid(row=1, column=2, sticky="nsew")
 
 
     def _create_board_grid(self) -> None:
-        grid_frame = tk.Frame(
-            master = self,
-            background="#aab7b8",
-        )
-        grid_frame.pack()
+        grid_frame = tk.Frame(master = self.master_frame, background="#aab7b8")
+        grid_frame.place(relx=0, rely=0.15 , relheight=0.85, relwidth=1)
         for row in range(self._game.board_size):
-            self.rowconfigure(row, weight = 1, minsize = 50)
-            self.columnconfigure(row, weight = 1, minsize = 75)
+            grid_frame.rowconfigure(row, weight = 1, minsize = 50)
+            grid_frame.columnconfigure(row, weight = 1, minsize = 75)
             for col in range(self._game.board_size):
                 cell_number = row * self._game.board_size + col + 1
                 button = tk.Button(
