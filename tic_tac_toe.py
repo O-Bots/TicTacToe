@@ -3,12 +3,14 @@ import tkinter as tk
 from itertools import cycle
 from tkinter import font
 from typing import NamedTuple
+import time
 import random
 
 class Player(NamedTuple):
     label: str
     color: str
     cpu: bool
+    name: str
 
 class Move(NamedTuple):
     row: int
@@ -17,8 +19,8 @@ class Move(NamedTuple):
 
 BOARD_SIZE: int = 3
 DEFAULT_PLAYERS = (
-    Player(label = "X", color = "blue", cpu = False),
-    Player(label = "O", color = "green", cpu = False),
+    Player(label = "X", color = "blue", cpu = False, name = "Player one"),
+    Player(label = "O", color = "green", cpu = False, name = "Player two"),
 )
 
 
@@ -116,7 +118,6 @@ class TicTacToeGame:
         self._players = cycle(self.players_list)
 
 
-
 class TicTacToeBoard(tk.Tk):
     def __init__(self, game) -> None:
         super().__init__()
@@ -135,7 +136,6 @@ class TicTacToeBoard(tk.Tk):
         self._create_board_display()
         self._create_board_grid()
         self._create_menu()
-        
 
     def popup(self) -> None:
         self.cpu_mode_option = tk.IntVar()
@@ -213,26 +213,30 @@ class TicTacToeBoard(tk.Tk):
     def confirm_button(self) -> None:
         self.attributes("-disabled", False)
         self.popup_window.destroy()
+        label_msg = "Cpu"
         if self.easy_mode_option.get():
             self.hard_mode_status= False
         if self.cpu_mode_option.get() == 0:
+            self._update_display(msg="Player one's turn")
             self.vs_cpu_status = False
             self._game.set_players(self._game.players_list)
             self._logic.cpu_play()
         else:
             if self.cpu_mode_option.get() and self.first_player_mode_option.get():
+                self._update_display(msg="Player one's turn")
                 self.vs_cpu_status = True
                 self.vs_cpu_info = [1, True]
+                self._update_player_two_info_display(label_msg)
                 self._game.set_cpu_player(1, True)
                 self._game.set_players(self._game.players_list)
                 self._logic.cpu_play()
             elif self.cpu_mode_option.get() and self.first_player_mode_option.get() == 0:
                 self.vs_cpu_status = True
                 self.vs_cpu_info = [0, True]
+                self._update_player_one_info_display(label_msg)
                 self._game.set_cpu_player(0, True)
                 self._game.set_players(self._game.players_list)
                 self._logic.cpu_play()
-
 
     def _create_menu(self):
         menu_bar = tk.Menu(master=self)
@@ -295,7 +299,6 @@ class TicTacToeBoard(tk.Tk):
         )
         self.player_two_score_display.grid(row=1, column=2, sticky="nsew")
 
-
     def _create_board_grid(self) -> None:
         grid_frame = tk.Frame(master = self.master_frame, background="#aab7b8")
         grid_frame.place(relx=0, rely=0.15 , relheight=0.85, relwidth=1)
@@ -345,16 +348,17 @@ class TicTacToeBoard(tk.Tk):
                 self._update_display(msg = "Tied game!", color = "red")
             elif self._game.has_winner():
                 self._highlight_cells()
-                msg = f'Player "{self._game.current_player.label}" won!'
+                self._update_display_msg()
+                msg = f'"{self.current_player_display_info}" won!'
                 color = self._game.current_player.color
                 self._update_display(msg, color)
             else:
                 self._game.toggle_player()
-                msg = f"{self._game.current_player.label}'s turn"
+                self._update_display_msg()
+                msg = f"{self.current_player_display_info}'s turn"
                 self._update_display(msg)
                 if self._game.current_player.cpu:
                     self._logic.cpu_play()
-
 
     def _update_button(self, clicked_btn):
         clicked_btn.config(text=self._game.current_player.label)
@@ -364,13 +368,23 @@ class TicTacToeBoard(tk.Tk):
         self.display["text"] = msg
         self.display["fg"] = color
 
+    def _update_display_msg(self):
+        self.current_player_display_info = ""
+        if self.vs_cpu_status:
+            if self._game.current_player.cpu:
+                self.current_player_display_info = "Cpu"
+            elif self._game.current_player.cpu == False:
+                self.current_player_display_info = self._game.current_player.name
+        elif self.vs_cpu_status is False:
+            self.current_player_display_info = self._game.current_player.name
+
     def _update_player_one_info_display(self, msg, color="black"):
-        self.player_one_display_label["text"] = msg
-        self.player_one_display_label["fg"] = color
+        self.player_one_label_display["text"] = msg
+        self.player_one_label_display["fg"] = color
 
     def _update_player_two_info_display(self, msg, color="black"):
-        self.player_two_display_label["text"] = msg
-        self.player_two_display_label["fg"] = color
+        self.player_two_label_display["text"] = msg
+        self.player_two_label_display["fg"] = color
 
     def _highlight_cells(self):
         for button, coordinates in self._cells.items():
@@ -381,6 +395,8 @@ class TicTacToeBoard(tk.Tk):
         #Reset the game's board to play again
         self._game.reset_game()
         self._update_display(msg="Ready?")
+        self._update_player_one_info_display("Player one")
+        self._update_player_two_info_display("Player two")
         for button in self._cells.keys():
             button.config(highlightbackground="lightblue")
             button.config(text="")
@@ -395,16 +411,18 @@ class TicTacToeBoard(tk.Tk):
         self._game.winner_combo = []
         self._game.cpu_moves = []
         self._game.player_moves = []
-        self._update_display(msg="Ready?")
         for button in self._cells.keys():
             button.config(highlightbackground="lightblue")
             button.config(text="")
             button.config(fg="black")
         if self.vs_cpu_status:
+            if self.vs_cpu_info[0] == 1:
+                self._update_display(msg="Player one's turn")
             self._game.set_cpu_player(self.vs_cpu_info[0],self.vs_cpu_info[1])
             self._game.set_players(self._game.players_list)
             self._logic.cpu_play()
         else:
+            self._update_display(msg="Player one's turn")
             self._game.set_players(self._game.players_list)
             self._logic.cpu_play()
 
@@ -451,9 +469,6 @@ class TicTacToeGameCpuLogic:
                     return self.center[0][0]
             else:
                 return self.center[0][0]
-
-    def cpu_second_move(self):
-        pass
 
     def double_threat_setup(self):
         #This is the logic for the cpu's second and third move which will play into setting up the double threat
