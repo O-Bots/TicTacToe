@@ -127,6 +127,8 @@ class TicTacToeBoard(tk.Tk):
         self.master_frame.place(x=0, y=0, relheight=1, relwidth=1)
         self._cells = {}
         self._game = game
+        self.player_one_score = 0
+        self.player_two_score = 0
         self.vs_cpu_status = None
         self.vs_cpu_info = [int, bool]
         self.twitch_vs_cpu_info = None
@@ -149,26 +151,13 @@ class TicTacToeBoard(tk.Tk):
         self.popup_window.attributes("-topmost", True)
         self.popup_window.bind("<FocusOut>", lambda event: self.popup_window.focus_force())
         self.popup_window.protocol('WM_DELETE_WINDOW', 'break')
-        self.popup_window.first_player_check = tk.Checkbutton(
-            self.popup_window, 
-            text="Play First?",
-            variable=self.first_player_mode_option,
-            onvalue=1,
-            offvalue=0,
-            font=("helvetica", 13)).pack(pady=(5),padx=(20))
         self.popup_window.cpu_check = tk.Checkbutton(
             self.popup_window, 
             text="Play VS the CPU",
             variable=self.cpu_mode_option,
             onvalue=1,
             offvalue=0,
-            font=("helvetica", 13)).pack(pady=(5),padx=(20))
-        self.popup_window.easy_mode_check = tk.Checkbutton(
-            self.popup_window, 
-            text="Easy Mode",
-            variable=self.easy_mode_option,
-            onvalue=1, 
-            offvalue=0,
+            command=self.vs_cpu_options,
             font=("helvetica", 13)).pack(pady=(5),padx=(20))
         self.popup_window.twitch_check = tk.Checkbutton(
             self.popup_window, 
@@ -199,6 +188,30 @@ class TicTacToeBoard(tk.Tk):
                 self.twitch_channel_input.pack_forget()
                 self.twitch_channel_input.destroy()
                 self.twitch_channel_input = None
+
+    def vs_cpu_options(self):
+        if self.cpu_mode_option.get():
+            self.first_player_check = tk.Checkbutton(
+                self.popup_window, 
+                text="Play First?",
+                variable=self.first_player_mode_option,
+                onvalue=1,
+                offvalue=0,
+                font=("helvetica", 13))
+            self.first_player_check.pack(pady=(5),padx=(20))
+            self.easy_mode_check = tk.Checkbutton(
+                self.popup_window, 
+                text="Easy Mode",
+                variable=self.easy_mode_option,
+                onvalue=1, 
+                offvalue=0,
+                font=("helvetica", 13))
+            self.easy_mode_check.pack(pady=(5),padx=(20))
+        else:
+            self.first_player_check.pack_forget()
+            self.first_player_check.destroy()
+            self.easy_mode_check.pack_forget()
+            self.easy_mode_check.destroy()
 
     def text_entry_click(self):
         if self.twitch_channel_input.get("1.0", "end-1c") == "Enter Twitch Channel":
@@ -278,7 +291,7 @@ class TicTacToeBoard(tk.Tk):
         self.player_one_label_display.grid(row=0, column=0, sticky="nsew")
         self.player_one_score_display = tk.Label(
             master = display_info_frame,
-            text ="123",
+            text = self.player_one_score,
             font = font.Font(size = 10),
             background="#aab7b8",
         )
@@ -293,7 +306,7 @@ class TicTacToeBoard(tk.Tk):
         self.player_two_label_display.grid(row=0, column=2, sticky="nsew")
         self.player_two_score_display = tk.Label(
             master = display_info_frame,
-            text ="123",
+            text = self.player_two_score,
             font = font.Font(size = 10),
             background="#aab7b8",
         )
@@ -350,6 +363,12 @@ class TicTacToeBoard(tk.Tk):
                 self._highlight_cells()
                 self._update_display_msg()
                 msg = f'"{self.current_player_display_info}" won!'
+                if self._game.current_player == self._game.players_list[0]:
+                    self.player_one_score = self.player_one_score +1
+                    self.player_one_score_display["text"] = self.player_one_score
+                elif self._game.current_player == self._game.players_list[1]:
+                    self.player_two_score = self.player_two_score +1
+                    self.player_two_score_display["text"] = self.player_two_score
                 color = self._game.current_player.color
                 self._update_display(msg, color)
             else:
@@ -395,6 +414,10 @@ class TicTacToeBoard(tk.Tk):
         #Reset the game's board to play again
         self._game.reset_game()
         self._update_display(msg="Ready?")
+        self.player_one_score = 0
+        self.player_one_score_display["text"] = self.player_one_score
+        self.player_two_score = 0
+        self.player_two_score_display["text"] = self.player_two_score
         self._update_player_one_info_display("Player one")
         self._update_player_two_info_display("Player two")
         for button in self._cells.keys():
