@@ -177,7 +177,7 @@ class TicTacToeBoard(tk.Tk):
     def channel_input(self):
         if self.twitch_mode_option.get():
             if self.twitch_channel_input is None:
-                self.twitch_channel_input = tk.Text(self.popup_window, height= 1, width=20)
+                self.twitch_channel_input = tk.Entry(self.popup_window, width=20)
                 self.twitch_channel_input.pack()
                 self.twitch_channel_input.insert(tk.END, "Enter Twitch Channel")
                 self.twitch_channel_input.bind("<FocusIn>", lambda e: self.text_entry_click())
@@ -214,17 +214,26 @@ class TicTacToeBoard(tk.Tk):
             self.easy_mode_check.destroy()
 
     def text_entry_click(self):
-        if self.twitch_channel_input.get("1.0", "end-1c") == "Enter Twitch Channel":
-            self.twitch_channel_input.delete("1.0", "end-1c")
-            self.twitch_channel_input.insert("1.0", "")
+        if self.twitch_channel_input.get() == "Enter Twitch Channel":
+            self.twitch_channel_input.delete(0, "end")
+            self.twitch_channel_input.config(fg= "black")
     
     def on_text_entry_focusout(self):
-        if self.twitch_channel_input.get("1.0", "end-1c") == "":
+        if self.twitch_channel_input.get() == "":
             self.twitch_channel_input.insert(tk.END, "Enter Twitch Channel")
             self.twitch_channel_input.config(fg= "grey")
 
     def confirm_button(self) -> None:
         self.attributes("-disabled", False)
+        if self.twitch_channel_input is not None:
+            self.twitch_value = self.twitch_channel_input.get()
+            if len(self.twitch_value) <= 1 or self.twitch_value == "Enter Twitch Channel":
+                print("No Twitch channel provided")
+            else:
+                print(self.twitch_value)
+        else:
+            print("No Twitch channel provided")
+
         self.popup_window.destroy()
         label_msg = "Cpu"
         if self.easy_mode_option.get():
@@ -250,7 +259,7 @@ class TicTacToeBoard(tk.Tk):
                 self._game.set_cpu_player(0, True)
                 self._game.set_players(self._game.players_list)
                 self._logic.cpu_play()
-
+        
     def _create_menu(self):
         menu_bar = tk.Menu(master=self)
         self.config(menu=menu_bar)
@@ -536,9 +545,6 @@ class TicTacToeGameCpuLogic:
             next_cpu_move_rng = random.choice(next_cpu_move)
             chosen_move = [key for key, value in available_moves if tuple(value) == next_cpu_move_rng]
             return chosen_move[0]
-
-
-            
 
     def get_corners(self):
         board_size = self._game.board_size
