@@ -257,8 +257,9 @@ class TicTacToeBoard(tk.Tk):
         file_menu = tk.Menu(master=menu_bar)
         file_menu.add_command(
             label="Play Again",
-            command=self.restart_game
+            command=self.restart_game,
         )
+        self.bind("")
         file_menu.add_separator()
         file_menu.add_command(
             label="Options",
@@ -342,6 +343,7 @@ class TicTacToeBoard(tk.Tk):
                 )
     
     def play(self, event) -> None:
+        update_move_list_check = [item.cpu for item in self._game.players_list]
         #Handle a player's move
         if self._game.current_player.cpu:
             clicked_button = event
@@ -350,13 +352,13 @@ class TicTacToeBoard(tk.Tk):
         row, col = self._cells[clicked_button]
         move = Move(row, col, self._game.current_player.label)
         if self._game.is_valid_move(move):
-            if any(DEFAULT_PLAYERS):#Will only run if there is a cpu player
+            self._update_button(clicked_button)
+            self._game.process_move(move)
+            if any(update_move_list_check):#Will only run if there is a cpu player
                 if self._game.current_player.cpu:
                     self._game.cpu_moves.append([row, col])
                 else:
                     self._game.player_moves.append([row, col])
-            self._update_button(clicked_button)
-            self._game.process_move(move)
             if self._game.is_tied():
                 self._update_display(msg = "Tied game!", color = "red")
             elif self._game.has_winner():
@@ -516,9 +518,28 @@ class TicTacToeGameCpuLogic:
                     return random.choice(move)
                 else:
                     return self.center[0][0]
-        # elif len(player_moves)+len(cpu_moves) == 3:
-        #     pass
-    
+        elif len(player_moves)+len(cpu_moves) == 3:
+            next_cpu_move = []
+            #Loop through all the possible win combinations
+            for win_combo in self._game._winning_combos:
+                #Transform every item in self._game.player_moves/cpu_moves into a tuple so that it matches the win_combo format
+                player_moves = [tuple(item) for item in self._game.player_moves]
+                cpu_moves = [tuple(item) for item in self._game.cpu_moves]
+                #Using set() with the "&" (intersection operator), filter out the win_combos that the player has some progress in
+                if not(bool(set(player_moves) & set(win_combo))):
+                    if bool(set(cpu_moves) & set(win_combo)):
+                        for move in win_combo:
+                            for cpu_move in self._game.cpu_moves:
+                                if not bool(list(move) == cpu_move):
+                                    next_cpu_move.append(move)
+            
+            next_cpu_move_rng = random.choice(next_cpu_move)
+            chosen_move = [key for key, value in available_moves if tuple(value) == next_cpu_move_rng]
+            return chosen_move[0]
+
+
+            
+
     def get_corners(self):
         board_size = self._game.board_size
         corner_coords = {(0,0), (0, board_size-1), (board_size-1,0), (board_size-1, board_size-1)}
@@ -535,7 +556,6 @@ class TicTacToeGameCpuLogic:
         self.player_winning_move = []
         self.cpu_winning_move = []
         self.block_win_check()
-
         #Logic for choosing where to move
         if self._game.current_player.cpu:
             if self._board.hard_mode_status:
@@ -550,7 +570,7 @@ class TicTacToeGameCpuLogic:
                 else:
                     if len(self._game.player_moves) + len(self._game.cpu_moves) <= 1:
                         self._board.play(self.cpu_first_move())
-                    elif len(self._game.player_moves) + len(self._game.cpu_moves) in range(2, 3):
+                    elif len(self._game.player_moves) + len(self._game.cpu_moves) in range(2, 4):
                         self._board.play(self.double_threat_setup())
                     else:
                         for key in keys:
