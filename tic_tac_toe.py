@@ -39,18 +39,38 @@ class TicTacToeGame:
         self.hard_mode = True
         self._setup_board()
 
-    def set_players(self, players):
+    def set_cpu_player(self, player_index: int, new_cpu_value: bool) -> None:
+        """Takes a player index (0 or 1) and a bool value to indicate if a player should be cpu controlled then creates a new list of players with the updated cpu info and sets up a cycle to interate through the list of players.
+
+        :param player_index: An int value to represent the first "0" or second "1" player
+        :type player_index: int
+        :param new_cpu_value: A bool value to represent if the supplied "player_index" is a cpu (Default value is "False")
+        :type new_cpu_value: bool
+        """
+        old_player = self.players_list[player_index]
+        updated_player = old_player._replace(cpu=new_cpu_value)
+        self.players_list[player_index] = updated_player
+        self._players = cycle(self.players_list)
+        
+    def set_players(self, players) -> None:
+        """Sets up a cycle to iterate through the list of players and initializes the current player
+
+        :param players: A list of player objects
+        :type players: list
+        """
         self._players = cycle(players)
         self.current_player = next(self._players)
 
     def _setup_board(self) -> None:
+        """Inittializes the game board, creating a grid of "Move" objects and computing all possible winning combinations (self._get_winning_combos) for the current board.
+        """
         self._current_moves = [
             [Move(row, col) for col in range(self.board_size)]
             for row in range(self.board_size)
         ]
         self._winning_combos = self._get_winning_combos()
 
-    def _get_winning_combos(self):
+    def _get_winning_combos(self) -> list:
         rows = [
             [(move.row, move.col) for move in row]
             for row in self._current_moves
@@ -61,7 +81,6 @@ class TicTacToeGame:
         return rows + columns + [first_diagonal, second_diagonal]
     
     def is_valid_move(self, move):
-        """Return True if move is valid, and false otherwise"""
         row, col = move.row, move.col
         move_was_not_played = self._current_moves[row][col].label == ""
         no_winner = not self._has_winner
@@ -111,12 +130,6 @@ class TicTacToeGame:
         self.players_list = list(DEFAULT_PLAYERS)
         self.current_player = DEFAULT_PLAYERS[0]
 
-    def set_cpu_player(self, player_index: int, new_cpu_value: bool):
-        old_player = self.players_list[player_index]
-        updated_player = old_player._replace(cpu=new_cpu_value)
-        self.players_list[player_index] = updated_player
-        self._players = cycle(self.players_list)
-
 
 class TicTacToeBoard(tk.Tk):
     def __init__(self, game) -> None:
@@ -127,6 +140,7 @@ class TicTacToeBoard(tk.Tk):
         self.master_frame.place(x=0, y=0, relheight=1, relwidth=1)
         self._cells = {}
         self._game = game
+        self.twitch_check = "Hello"
         self.player_one_score = 0
         self.player_two_score = 0
         self.vs_cpu_status = None
@@ -179,6 +193,8 @@ class TicTacToeBoard(tk.Tk):
             if self.twitch_channel_input is None:
                 self.twitch_channel_input = tk.Entry(self.popup_window, width=20)
                 self.twitch_channel_input.pack()
+                self.twitch_channel_value_info = tk.Label(self.popup_window)
+                self.twitch_channel_value_info.pack()
                 self.twitch_channel_input.insert(tk.END, "Enter Twitch Channel")
                 self.twitch_channel_input.bind("<FocusIn>", lambda e: self.text_entry_click())
                 self.twitch_channel_input.bind("<FocusOut>", lambda e: self.on_text_entry_focusout())
@@ -187,7 +203,15 @@ class TicTacToeBoard(tk.Tk):
             if self.twitch_channel_input is not None:
                 self.twitch_channel_input.pack_forget()
                 self.twitch_channel_input.destroy()
+                self.twitch_channel_value_info.pack_forget()
+                self.twitch_channel_value_info.destroy()
                 self.twitch_channel_input = None
+    
+    def is_channel_input_valid(self):
+        if self.twitch_value.lower() == "Holy".lower():
+            return True
+        else:
+            return False
 
     def vs_cpu_options(self):
         if self.cpu_mode_option.get():
@@ -224,16 +248,15 @@ class TicTacToeBoard(tk.Tk):
             self.twitch_channel_input.config(fg= "grey")
 
     def confirm_button(self) -> None:
-        self.attributes("-disabled", False)
         if self.twitch_channel_input is not None:
             self.twitch_value = self.twitch_channel_input.get()
-            if len(self.twitch_value) <= 1 or self.twitch_value == "Enter Twitch Channel":
-                print("No Twitch channel provided")
-            else:
-                print(self.twitch_value)
-        else:
-            print("No Twitch channel provided")
-
+            if not self.is_channel_input_valid():
+                self.twitch_channel_value_info["text"] = "No channels found"
+                return
+            elif self.is_channel_input_valid():
+                pass
+        
+        self.attributes("-disabled", False)
         self.popup_window.destroy()
         label_msg = "Cpu"
         if self.easy_mode_option.get():
@@ -258,6 +281,7 @@ class TicTacToeBoard(tk.Tk):
                 self._update_player_one_info_display(label_msg)
                 self._game.set_cpu_player(0, True)
                 self._game.set_players(self._game.players_list)
+                print(type(self._game.players_list))
                 self._logic.cpu_play()
         
     def _create_menu(self):
